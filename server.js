@@ -23,23 +23,27 @@ app.use(express.json());
 app.use(cookieParser());
 app.use("/public", express.static(path.join(__dirname, "public")));
 
-function nowIso() { return new Date().toISOString(); }
+function nowIso() {
+  return new Date().toISOString();
+}
 
 function generateOrderCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
-  for (let i = 0; i < config.order.codeLength; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < config.order.codeLength; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
   return `${config.order.prefix}-${code}`;
 }
 
 function findProduct(productId) {
-  return config.products.find(p => p.id === productId);
+  return config.products.find((p) => p.id === productId);
 }
 function findOption(product, optionId) {
-  return product?.options?.find(o => o.id === optionId);
+  return product?.options?.find((o) => o.id === optionId);
 }
 function findPayment(methodKey) {
-  return config.payments.methods.find(m => m.key === methodKey);
+  return config.payments.methods.find((m) => m.key === methodKey);
 }
 
 function shippingFee() {
@@ -70,7 +74,7 @@ function writeCart(res, cart) {
   res.cookie("cart", JSON.stringify(cart), {
     httpOnly: false,
     sameSite: "lax",
-    maxAge: 1000 * 60 * 60 * 24 * 14
+    maxAge: 1000 * 60 * 60 * 24 * 14,
   });
 }
 
@@ -106,7 +110,7 @@ function cartToLines(cart) {
       qty,
       min_qty: minQty,
       line_total: lineTotal,
-      bulk_applied: (!option.minQty && unitPrice !== basePrice)
+      bulk_applied: !option.minQty && unitPrice !== basePrice,
     });
   }
 
@@ -117,18 +121,28 @@ function cartToLines(cart) {
   return { lines, subtotalUsd, shippingUsd: ship, totalUsd };
 }
 
+// ✅ Telegram (built-in fetch, no node-fetch)
 async function sendTelegram(text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return;
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
-  const body = { chat_id: chatId, text };
 
   try {
-    const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
-    await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  } catch (e) {}
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+
+    if (!resp.ok) {
+      const t = await resp.text();
+      console.error("Telegram error:", resp.status, t);
+    }
+  } catch (e) {
+    console.error("Telegram send failed:", e);
+  }
 }
 
 // Inject cart count into all views
@@ -155,7 +169,7 @@ app.post("/cart/add", (req, res) => {
   const qty = Math.max(minQty, Math.min(9999, isNaN(qtyRaw) ? minQty : qtyRaw));
 
   const cart = readCart(req);
-  const existing = cart.find(i => i.product_id === product_id && i.option_id === option_id);
+  const existing = cart.find((i) => i.product_id === product_id && i.option_id === option_id);
 
   if (existing) {
     const newQty = (Number(existing.qty) || 0) + qty;
@@ -188,7 +202,7 @@ app.post("/cart/update", (req, res) => {
 
   const qty = Math.max(0, Math.min(9999, isNaN(qtyRaw) ? 0 : qtyRaw));
 
-  const idx = cart.findIndex(i => i.product_id === product_id && i.option_id === option_id);
+  const idx = cart.findIndex((i) => i.product_id === product_id && i.option_id === option_id);
   if (idx >= 0) {
     if (qty <= 0) cart.splice(idx, 1);
     else cart[idx].qty = Math.max(minQty, qty);
@@ -244,24 +258,36 @@ app.post("/shipping-cart", async (req, res) => {
     shippingUsd,
     totalUsd,
     (contact || "").trim() || null,
-    ship_name.trim(), ship_line1.trim(), (ship_line2 || "").trim() || null,
-    ship_city.trim(), ship_state.trim(), ship_zip.trim(), ship_country.trim(),
-    t, t
+    ship_name.trim(),
+    ship_line1.trim(),
+    (ship_line2 || "").trim() || null,
+    ship_city.trim(),
+    ship_state.trim(),
+    ship_zip.trim(),
+    ship_country.trim(),
+    t,
+    t
   );
 
   writeCart(res, []); // clear cart
- await sendTelegram(
-  `📦 New order: ${orderCode}\n` +
-  `Items:\n` +
-  `${lines.map(l => `- ${l.product_name} — ${l.option_name} x${l.qty} ($${Number(l.line_total).toFixed(2)})`).join("\n")}\n\n` +
-  `Ship To:\n` +
-  `${ship_name}\n` +
-  `${ship_line1}${ship_line2 ? `, ${ship_line2}` : ""}\n` +
-  `${ship_city}, ${ship_state} ${ship_zip}\n` +
-  `${ship_country}\n` +
-  `${contact ? `\nContact: ${contact}\n` : ""}` +
-  `\nSubtotal: $${subtotalUsd}\nShipping: $${shippingUsd}\nTotal: $${totalUsd}`
-);
+
+  await sendTelegram(
+    `📦 New order: ${orderCode}\n` +
+      `Items:\n` +
+      `${lines
+        .map((l) => `- ${l.product_name} — ${l.option_name} x${l.qty} ($${Number(l.line_total).toFixed(2)})`)
+        .join("\n")}\n\n` +
+      `Ship To:\n` +
+      `${ship_name}\n` +
+      `${ship_line1}${ship_line2 ? `, ${ship_line2}` : ""}\n` +
+      `${ship_city}, ${ship_state} ${ship_zip}\n` +
+      `${ship_country}\n` +
+      `${contact ? `\nContact: ${contact}\n` : ""}` +
+      `\nSubtotal: $${subtotalUsd}\nShipping: $${shippingUsd}\nTotal: $${totalUsd}`
+  );
+
+  // ✅ IMPORTANT: redirect to payment page
+  res.redirect(`/payment/${encodeURIComponent(orderCode)}`);
 });
 
 // Single-item quick checkout
@@ -287,7 +313,8 @@ app.get("/shipping", (req, res) => {
 });
 
 app.post("/shipping", async (req, res) => {
-  const { product_id, option_id, qty, contact, ship_name, ship_line1, ship_line2, ship_city, ship_state, ship_zip, ship_country } = req.body;
+  const { product_id, option_id, qty, contact, ship_name, ship_line1, ship_line2, ship_city, ship_state, ship_zip, ship_country } =
+    req.body;
 
   const product = findProduct(product_id);
   const option = findOption(product, option_id);
@@ -308,18 +335,20 @@ app.post("/shipping", async (req, res) => {
   const ship = shippingFee();
   const totalUsd = Number((subtotalUsd + ship).toFixed(2));
 
-  const lines = [{
-    product_id: product.id,
-    option_id: option.id,
-    product_name: product.name,
-    option_name: option.name,
-    base_price: basePrice,
-    unit_price: unitPrice,
-    qty: q,
-    min_qty: minQty,
-    line_total: subtotalUsd,
-    bulk_applied: (!option.minQty && unitPrice !== basePrice)
-  }];
+  const lines = [
+    {
+      product_id: product.id,
+      option_id: option.id,
+      product_name: product.name,
+      option_name: option.name,
+      base_price: basePrice,
+      unit_price: unitPrice,
+      qty: q,
+      min_qty: minQty,
+      line_total: subtotalUsd,
+      bulk_applied: !option.minQty && unitPrice !== basePrice,
+    },
+  ];
 
   let orderCode = generateOrderCode();
   for (let i = 0; i < 8; i++) {
@@ -344,12 +373,33 @@ app.post("/shipping", async (req, res) => {
     ship,
     totalUsd,
     (contact || "").trim() || null,
-    ship_name.trim(), ship_line1.trim(), (ship_line2 || "").trim() || null,
-    ship_city.trim(), ship_state.trim(), ship_zip.trim(), ship_country.trim(),
-    t, t
+    ship_name.trim(),
+    ship_line1.trim(),
+    (ship_line2 || "").trim() || null,
+    ship_city.trim(),
+    ship_state.trim(),
+    ship_zip.trim(),
+    ship_country.trim(),
+    t,
+    t
   );
 
-  await sendTelegram(`📦 New order: ${orderCode}\nSubtotal: $${subtotalUsd}\nShipping: $${ship}\nTotal: $${totalUsd}`);
+  // ✅ FIXED: include shipping details here too
+  await sendTelegram(
+    `📦 New order: ${orderCode}\n` +
+      `Items:\n` +
+      `${lines
+        .map((l) => `- ${l.product_name} — ${l.option_name} x${l.qty} ($${Number(l.line_total).toFixed(2)})`)
+        .join("\n")}\n\n` +
+      `Ship To:\n` +
+      `${ship_name}\n` +
+      `${ship_line1}${ship_line2 ? `, ${ship_line2}` : ""}\n` +
+      `${ship_city}, ${ship_state} ${ship_zip}\n` +
+      `${ship_country}\n` +
+      `${contact ? `\nContact: ${contact}\n` : ""}` +
+      `\nSubtotal: $${subtotalUsd}\nShipping: $${ship}\nTotal: $${totalUsd}`
+  );
+
   res.redirect(`/payment/${encodeURIComponent(orderCode)}`);
 });
 
@@ -363,7 +413,13 @@ app.get("/payment/:code", async (req, res) => {
   const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);
   if (!order) return res.status(404).send("Order not found.");
 
-  const items = (() => { try { return JSON.parse(order.items_json || "[]"); } catch { return []; } })();
+  const items = (() => {
+    try {
+      return JSON.parse(order.items_json || "[]");
+    } catch {
+      return [];
+    }
+  })();
 
   const selected = findPayment(order.payment_method) || config.payments.methods[0];
 
@@ -382,10 +438,20 @@ app.get("/payment/:code", async (req, res) => {
     ? config.payments.wallets[selected.key]
     : config.payments.manualDetails[selected.key];
 
-  const subtotalUsd = (order.subtotal_usd == null) ? null : Number(order.subtotal_usd);
-  const shippingUsd = (order.shipping_fee == null) ? null : Number(order.shipping_fee);
+  const subtotalUsd = order.subtotal_usd == null ? null : Number(order.subtotal_usd);
+  const shippingUsd = order.shipping_fee == null ? null : Number(order.shipping_fee);
 
-  res.render("payment", { config, order, items, selected, paymentDetails, cryptoQuote, methods: config.payments.methods, subtotalUsd, shippingUsd });
+  res.render("payment", {
+    config,
+    order,
+    items,
+    selected,
+    paymentDetails,
+    cryptoQuote,
+    methods: config.payments.methods,
+    subtotalUsd,
+    shippingUsd,
+  });
 });
 
 app.post("/payment/:code/select", (req, res) => {
@@ -397,8 +463,7 @@ app.post("/payment/:code/select", (req, res) => {
   const pm = findPayment(method);
   if (!pm) return res.status(400).send("Invalid payment method.");
 
-  db.prepare("UPDATE orders SET payment_method = ?, updated_at = ? WHERE id = ?")
-    .run(pm.key, nowIso(), order.id);
+  db.prepare("UPDATE orders SET payment_method = ?, updated_at = ? WHERE id = ?").run(pm.key, nowIso(), order.id);
 
   res.redirect(`/payment/${encodeURIComponent(code)}`);
 });
@@ -408,10 +473,21 @@ app.post("/payment/:code/confirm", async (req, res) => {
   const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);
   if (!order) return res.status(404).send("Order not found.");
 
-  db.prepare("UPDATE orders SET status = 'payment_sent', updated_at = ? WHERE id = ?")
-    .run(nowIso(), order.id);
+  db.prepare("UPDATE orders SET status = 'payment_sent', updated_at = ? WHERE id = ?").run(nowIso(), order.id);
 
-  await sendTelegram(`💸 Payment sent (customer): ${order.order_code}\nTotal: $${order.total_usd}\nMethod: ${order.payment_method || 'not set'}`);
+  // ✅ Include shipping details in payment-sent notification
+  await sendTelegram(
+    `💸 Payment sent: ${order.order_code}\n` +
+      `Total: $${Number(order.total_usd).toFixed(2)}\n` +
+      `Method: ${order.payment_method || "not set"}\n\n` +
+      `Ship To:\n` +
+      `${order.ship_name}\n` +
+      `${order.ship_line1}${order.ship_line2 ? `, ${order.ship_line2}` : ""}\n` +
+      `${order.ship_city}, ${order.ship_state} ${order.ship_zip}\n` +
+      `${order.ship_country}\n` +
+      `${order.contact ? `\nContact: ${order.contact}\n` : ""}`
+  );
+
   res.render("thanks", { config, order });
 });
 
@@ -455,7 +531,9 @@ app.get("/admin/order/:code", requireAdmin, (req, res) => {
   if (!order) return res.status(404).send("Order not found.");
 
   let items = [];
-  try { items = JSON.parse(order.items_json || "[]"); } catch (e) {}
+  try {
+    items = JSON.parse(order.items_json || "[]");
+  } catch (e) {}
 
   res.render("admin-order", { config, order, items });
 });
@@ -463,14 +541,13 @@ app.get("/admin/order/:code", requireAdmin, (req, res) => {
 app.post("/admin/order/:code/status", requireAdmin, async (req, res) => {
   const code = req.params.code;
   const status = String(req.body.status || "");
-  const allowed = new Set(["pending_payment","payment_sent","paid","rejected"]);
+  const allowed = new Set(["pending_payment", "payment_sent", "paid", "rejected"]);
   if (!allowed.has(status)) return res.status(400).send("Bad status.");
 
   const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);
   if (!order) return res.status(404).send("Order not found.");
 
-  db.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?")
-    .run(status, nowIso(), order.id);
+  db.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?").run(status, nowIso(), order.id);
 
   if (status === "paid") await sendTelegram(`✅ Marked PAID: ${order.order_code}\nTotal: $${order.total_usd}`);
   if (status === "rejected") await sendTelegram(`❌ Rejected: ${order.order_code}\nTotal: $${order.total_usd}`);
