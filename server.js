@@ -250,8 +250,18 @@ app.post("/shipping-cart", async (req, res) => {
   );
 
   writeCart(res, []); // clear cart
-  await sendTelegram(`🛒 New cart order: ${orderCode}\nSubtotal: $${subtotalUsd}\nShipping: $${shippingUsd}\nTotal: $${totalUsd}`);
-  res.redirect(`/payment/${encodeURIComponent(orderCode)}`);
+ await sendTelegram(
+  `🛒 New order: ${orderCode}\n` +
+  `Items:\n` +
+  `${lines.map(l => `- ${l.product_name} — ${l.option_name} x${l.qty} ($${Number(l.line_total).toFixed(2)})`).join("\n")}\n\n` +
+  `Ship To:\n` +
+  `${ship_name}\n` +
+  `${ship_line1}${ship_line2 ? `, ${ship_line2}` : ""}\n` +
+  `${ship_city}, ${ship_state} ${ship_zip}\n` +
+  `${ship_country}\n` +
+  `${contact ? `\nContact: ${contact}\n` : ""}` +
+  `\nSubtotal: $${subtotalUsd}\nShipping: $${shippingUsd}\nTotal: $${totalUsd}`
+);
 });
 
 // Single-item quick checkout
