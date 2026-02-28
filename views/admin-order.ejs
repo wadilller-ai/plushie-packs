@@ -1,0 +1,72 @@
+<%- include('partials/header', { config }) %>
+
+<section class="card">
+  <div class="adminTop">
+    <div>
+      <div class="muted">Order</div>
+      <div class="orderCode"><%= order.order_code %></div>
+    </div>
+    <a class="btn btn-small" href="/admin/orders">Back</a>
+  </div>
+
+  <div class="summary">
+    <div>
+      <div class="muted">Items</div>
+      <div><b><%= (items && items.length) ? items.length : 1 %></b> line(s)</div>
+      <div class="muted small">Method: <%= order.payment_method || '-' %></div>
+    </div>
+    <div>
+      <div class="muted">Total</div>
+      <div class="total">$<%= Number(order.total_usd).toFixed(2) %></div>
+      <% if (order.subtotal_usd != null && order.shipping_fee != null) { %>
+        <div class="muted small">Subtotal: $<%= Number(order.subtotal_usd).toFixed(2) %></div>
+        <div class="muted small">Shipping: $<%= Number(order.shipping_fee).toFixed(2) %></div>
+      <% } %>
+    </div>
+    <div>
+      <div class="muted">Status</div>
+      <div class="status status-<%= order.status %>"><%= order.status %></div>
+    </div>
+  </div>
+
+  <% if (items && items.length) { %>
+    <div class="cartMini" style="margin-top:12px;">
+      <% items.forEach(l => { %>
+        <div class="miniRow">
+          <div><b><%= l.product_name %></b> — <%= l.option_name %> <span class="muted">x<%= l.qty %></span></div>
+          <div>$<%= Number(l.line_total).toFixed(2) %></div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <div class="grid2" style="margin-top:12px;">
+    <div class="card-mini">
+      <div class="muted">Contact</div>
+      <div><%= order.contact || '-' %></div>
+    </div>
+    <div class="card-mini">
+      <div class="muted">Shipping</div>
+      <div><%= order.ship_name %></div>
+      <div class="muted small">
+        <%= order.ship_line1 %><% if (order.ship_line2) { %>, <%= order.ship_line2 %><% } %><br/>
+        <%= order.ship_city %>, <%= order.ship_state %> <%= order.ship_zip %><br/>
+        <%= order.ship_country %>
+      </div>
+    </div>
+  </div>
+
+  <hr class="hr" />
+
+  <form method="POST" action="/admin/order/<%= encodeURIComponent(order.order_code) %>/status" class="filters">
+    <label class="muted small">Update status</label>
+    <select name="status">
+      <% ['pending_payment','payment_sent','paid','rejected'].forEach(s => { %>
+        <option value="<%= s %>" <%= order.status===s?'selected':'' %>><%= s %></option>
+      <% }) %>
+    </select>
+    <button class="btn btn-small" type="submit">Save</button>
+  </form>
+</section>
+
+<%- include('partials/footer') %>

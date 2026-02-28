@@ -1,0 +1,38 @@
+<%- include('partials/header', { config }) %>
+
+<section class="card">
+  <div class="adminTop">
+    <h1 class="h1">Orders</h1>
+    <form method="POST" action="/admin/logout">
+      <button class="btn btn-small" type="submit">Logout</button>
+    </form>
+  </div>
+
+  <form method="GET" action="/admin/orders" class="filters">
+    <select name="status">
+      <option value="">All statuses</option>
+      <% ['pending_payment','payment_sent','paid','rejected'].forEach(s => { %>
+        <option value="<%= s %>" <%= status===s?'selected':'' %>><%= s %></option>
+      <% }) %>
+    </select>
+    <input name="q" placeholder="Search code" value="<%= q %>" />
+    <button class="btn btn-small" type="submit">Filter</button>
+  </form>
+
+  <div class="table">
+    <div class="trow thead">
+      <div>Code</div><div>Total</div><div>Method</div><div>Status</div><div>Created</div>
+    </div>
+    <% rows.forEach(r => { %>
+      <a class="trow" href="/admin/order/<%= encodeURIComponent(r.order_code) %>">
+        <div class="mono"><%= r.order_code %></div>
+        <div>$<%= Number(r.total_usd).toFixed(2) %></div>
+        <div><%= r.payment_method || '-' %></div>
+        <div class="status status-<%= r.status %>"><%= r.status %></div>
+        <div class="muted small"><%= r.created_at %></div>
+      </a>
+    <% }) %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

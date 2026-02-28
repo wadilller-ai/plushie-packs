@@ -1,0 +1,74 @@
+<%- include('partials/header', { config }) %>
+
+<section class="card">
+  <div class="row">
+    <div>
+      <h1 class="h1">Cart</h1>
+      <p class="muted">Update quantities, then checkout.</p>
+    </div>
+    <div class="row" style="gap:10px;">
+      <form method="POST" action="/cart/clear">
+        <button class="btn btn-small" type="submit">Clear Cart</button>
+      </form>
+      <a class="btn btn-small" href="/">Continue Shopping</a>
+    </div>
+  </div>
+
+  <% if (!lines.length) { %>
+    <div class="muted">Your cart is empty.</div>
+  <% } else { %>
+    <div class="cartTable">
+      <div class="cartRow cartHead">
+        <div>Item</div><div>Unit</div><div>Qty</div><div>Total</div><div></div>
+      </div>
+      <% lines.forEach(l => { %>
+        <div class="cartRow">
+          <div>
+            <div><b><%= l.product_name %></b></div>
+            <div class="muted small"><%= l.option_name %></div>
+
+            <% if (l.unit_price !== l.base_price) { %>
+              <div class="discountTag">Bulk discount applied ✅</div>
+            <% } %>
+
+            <% if (l.min_qty && l.min_qty > 1) { %>
+              <div class="muted small">Minimum qty: <b><%= l.min_qty %></b></div>
+            <% } %>
+          </div>
+
+          <div>$<%= Number(l.unit_price).toFixed(2) %></div>
+
+          <div>
+            <form method="POST" action="/cart/update" class="qtyForm">
+              <input type="hidden" name="key" value="<%= l.product_id %>::<%= l.option_id %>"/>
+              <input class="qtyInput" type="number" name="qty" min="0" value="<%= l.qty %>" />
+              <button class="btn btn-small" type="submit">Update</button>
+            </form>
+            <div class="muted small">Set 0 to remove</div>
+          </div>
+
+          <div>$<%= Number(l.line_total).toFixed(2) %></div>
+          <div></div>
+        </div>
+      <% }) %>
+    </div>
+
+    <div class="cartTotals">
+      <div class="totLine">
+        <div class="muted">Subtotal</div>
+        <div>$<%= Number(subtotalUsd).toFixed(2) %></div>
+      </div>
+      <div class="totLine">
+        <div class="muted">Shipping</div>
+        <div>$<%= Number(shippingUsd).toFixed(2) %></div>
+      </div>
+      <div class="totLine totLineBig">
+        <div>Total</div>
+        <div class="total">$<%= Number(totalUsd).toFixed(2) %></div>
+      </div>
+      <a class="btn" href="/shipping-cart">Checkout</a>
+    </div>
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>

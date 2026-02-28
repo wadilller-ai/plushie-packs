@@ -1,0 +1,85 @@
+<%- include('partials/header', { config }) %>
+
+<section class="card">
+  <h1 class="h1">Payment</h1>
+  <p class="muted">Choose a payment method and send payment.</p>
+
+  <div class="orderHeader">
+    <div>
+      <div class="muted">Order Code</div>
+      <div class="orderCode"><%= order.order_code %></div>
+    </div>
+    <div class="right">
+      <div class="muted">Total</div>
+      <div class="total">$<%= Number(order.total_usd).toFixed(2) %></div>
+    </div>
+  </div>
+
+  <% if (items && items.length) { %>
+    <div class="cartMini" style="margin-top:12px;">
+      <% items.forEach(l => { %>
+        <div class="miniRow">
+          <div>
+            <b><%= l.product_name %></b> — <%= l.option_name %>
+            <span class="muted">x<%= l.qty %></span>
+            <% if (l.unit_price !== l.base_price) { %>
+              <span class="miniDiscount">Bulk ✅</span>
+            <% } %>
+          </div>
+          <div>$<%= Number(l.line_total).toFixed(2) %></div>
+        </div>
+      <% }) %>
+
+      <% if (subtotalUsd != null && shippingUsd != null) { %>
+        <div class="miniRow totalRow"><div>Subtotal</div><div>$<%= Number(subtotalUsd).toFixed(2) %></div></div>
+        <div class="miniRow totalRow"><div>Shipping</div><div>$<%= Number(shippingUsd).toFixed(2) %></div></div>
+        <div class="miniRow totalRow"><div>Total</div><div class="total">$<%= Number(order.total_usd).toFixed(2) %></div></div>
+      <% } %>
+    </div>
+  <% } %>
+
+  <hr class="hr" />
+
+  <form method="POST" action="/payment/<%= encodeURIComponent(order.order_code) %>/select" class="filters">
+    <label class="muted small">Payment Method</label>
+    <select name="payment_method">
+      <% methods.forEach(m => { %>
+        <option value="<%= m.key %>" <%= (m.key === selected.key) ? 'selected' : '' %>><%= m.label %></option>
+      <% }) %>
+    </select>
+    <button class="btn btn-small" type="submit">Update</button>
+  </form>
+
+  <div class="payBox">
+    <div class="payMethod"><%= selected.label %></div>
+
+    <p class="muted small">
+      Include this order code in your payment note/memo: <b><%= order.order_code %></b>
+    </p>
+
+    <% if (selected.isCrypto) { %>
+      <div class="payLine">Send: <b>$<%= Number(order.total_usd).toFixed(2) %></b> worth of <b><%= selected.label %></b></div>
+
+      <% if (cryptoQuote && !cryptoQuote.error) { %>
+        <div class="payLine">Estimated: <b><%= cryptoQuote.coinAmount %></b></div>
+        <div class="muted small">Price used: $<%= cryptoQuote.usdPrice %> per coin (live)</div>
+      <% } else { %>
+        <div class="muted small">Live price unavailable — refresh in a minute.</div>
+      <% } %>
+
+      <div class="payLine">Address: <span class="mono"><%= paymentDetails.address %></span></div>
+      <div class="muted small warn">Send on the correct network only. Wrong network = lost funds.</div>
+    <% } else { %>
+      <div class="payLine">Send: <b>$<%= Number(order.total_usd).toFixed(2) %></b></div>
+      <div class="payLine">To: <span class="mono"><%= paymentDetails.display %></span></div>
+      <div class="muted small">Memo/Note: <b><%= order.order_code %></b></div>
+    <% } %>
+  </div>
+
+  <form method="POST" action="/payment/<%= encodeURIComponent(order.order_code) %>/confirm" style="margin-top:14px;">
+    <button class="btn full" type="submit">I Sent Payment</button>
+    <div class="muted small">After you pay, your order is placed for review.</div>
+  </form>
+</section>
+
+<%- include('partials/footer') %>
