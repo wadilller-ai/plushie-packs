@@ -251,7 +251,7 @@ app.post("/shipping-cart", async (req, res) => {
 
   writeCart(res, []); // clear cart
  await sendTelegram(
-  `🛒 New order: ${orderCode}\n` +
+  `📦 New order: ${orderCode}\n` +
   `Items:\n` +
   `${lines.map(l => `- ${l.product_name} — ${l.option_name} x${l.qty} ($${Number(l.line_total).toFixed(2)})`).join("\n")}\n\n` +
   `Ship To:\n` +
@@ -260,7 +260,7 @@ app.post("/shipping-cart", async (req, res) => {
   `${ship_city}, ${ship_state} ${ship_zip}\n` +
   `${ship_country}\n` +
   `${contact ? `\nContact: ${contact}\n` : ""}` +
-  `\nSubtotal: $${subtotalUsd}\nShipping: $${shippingUsd}\nTotal: $${totalUsd}`
+  `\nSubtotal: $${subtotalUsd}\nShipping: $${ship}\nTotal: $${totalUsd}`
 );
 });
 
