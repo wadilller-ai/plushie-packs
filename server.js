@@ -260,7 +260,7 @@ app.post("/shipping-cart", async (req, res) => {
   `${ship_city}, ${ship_state} ${ship_zip}\n` +
   `${ship_country}\n` +
   `${contact ? `\nContact: ${contact}\n` : ""}` +
-  `\nSubtotal: $${subtotalUsd}\nShipping: $${ship}\nTotal: $${totalUsd}`
+  `\nSubtotal: $${subtotalUsd}\nShipping: $${shippingUsd}\nTotal: $${totalUsd}`
 );
 });
 
