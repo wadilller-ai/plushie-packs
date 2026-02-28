@@ -38,10 +38,6 @@ module.exports = {
 
   payments: {
     methods: [
-      { key: "cashapp", label: "Cash App" },
-      { key: "applepay", label: "Apple Pay" },
-      { key: "venmo", label: "Venmo" },
-      { key: "paypal", label: "PayPal" },
       { key: "chime", label: "Chime" },
 
       { key: "btc", label: "Bitcoin (BTC)", isCrypto: true, coingeckoId: "bitcoin" },
@@ -52,10 +48,6 @@ module.exports = {
     ],
 
     manualDetails: {
-      cashapp: { display: "$wadig213" },
-      applepay:{ display: "(213)407-9601" },
-      venmo:   { display: "@hitechwa" },
-      paypal:  { display: "wadigo.a@gmail.com" },
       chime:   { display: "$plushiepacks" }
     },
 
