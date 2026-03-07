@@ -14,7 +14,8 @@
         <div class="logo-text"><%= config.brand.siteName %></div>
       </div>
       <nav class="nav">
-        <a href="/">Shop</a>
+        <a href="/vault">Vault</a>
+        <a href="/shop">Shop</a>
 
         <a class="cartLink" href="/cart" aria-label="Cart">
           <span class="icon" aria-hidden="true">
@@ -32,6 +33,11 @@
 
         <a href="/bulk/standard">Standard Bulk</a>
         <a href="/bulk/buddies">Buddies Bulk</a>
+        <% if (memberUser) { %>
+          <form method="POST" action="/auth/logout" style="display:inline; margin-left:12px;">
+            <button class="btn btn-small" type="submit" style="margin-top:0;">Logout @<%= memberUser.handle %></button>
+          </form>
+        <% } %>
         <a href="/admin">Admin</a>
       </nav>
     </div>
