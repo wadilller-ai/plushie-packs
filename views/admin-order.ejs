@@ -61,7 +61,7 @@
   <form method="POST" action="/admin/order/<%= encodeURIComponent(order.order_code) %>/status" class="filters">
     <label class="muted small">Update status</label>
     <select name="status">
-      <% ['pending_payment','payment_sent','paid','rejected'].forEach(s => { %>
+      <% ['pending_payment','payment_sent','crypto_processing','not_sent','paid','rejected'].forEach(s => { %>
         <option value="<%= s %>" <%= order.status===s?'selected':'' %>><%= s %></option>
       <% }) %>
     </select>
