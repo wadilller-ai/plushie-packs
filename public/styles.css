@@ -319,18 +319,26 @@ input:focus,select:focus{border-color:rgba(124,58,237,.8);box-shadow:0 0 0 3px r
 .portalTitle{font-size:clamp(2rem,4vw,3.5rem);margin:0;max-width:800px;line-height:1.08}
 .portalLead{max-width:620px;color:var(--muted);margin:16px auto 22px}
 .portalCore{
-  width:170px;height:170px;border-radius:50%;
+  width:190px;height:190px;border-radius:50%;
   border:1px solid rgba(148,162,255,.42);
-  background:radial-gradient(circle at 35% 30%, rgba(210,221,255,.7), rgba(111,127,255,.16) 40%, rgba(4,6,18,.92));
-  box-shadow:0 0 35px rgba(125,145,255,.24), inset 0 0 40px rgba(120,140,255,.18);
+  background:radial-gradient(circle at 40% 20%, rgba(135,155,255,.18), rgba(7,10,24,.94));
+  box-shadow:0 0 35px rgba(125,145,255,.24), inset 0 0 36px rgba(120,140,255,.2);
   position:relative;display:grid;place-items:center;cursor:pointer;
   animation: coreFloat 6.5s ease-in-out infinite;
+  overflow:hidden;
 }
 .portalCore:hover{transform:scale(1.03)}
 .portalRing{position:absolute;inset:-14px;border-radius:50%;border:1px solid rgba(151,166,255,.33)}
 .ringA{animation: spin 16s linear infinite}
 .ringB{inset:-24px;border-color:rgba(113,191,255,.24);animation: spinReverse 20s linear infinite}
-.portalGlyph{font-size:38px;color:#f8fbff;text-shadow:0 0 24px rgba(186,209,255,.92);z-index:2}
+.portalMascot{
+  width:74%;
+  height:74%;
+  object-fit:contain;
+  filter:drop-shadow(0 0 20px rgba(255,220,130,.28));
+  animation: logoSpin 14s linear infinite;
+  z-index:2;
+}
 .portalPulse{position:absolute;inset:-40px;border-radius:50%;border:1px solid rgba(160,178,255,.2);animation:pulse 4s ease-in-out infinite}
 .portalEnter{margin-top:24px;padding:12px 22px;border-radius:999px;border:1px solid rgba(147,170,255,.44);color:#eef3ff;background:rgba(14,18,35,.55);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 .authDeck{margin-top:28px;display:grid;grid-template-columns:repeat(2,minmax(240px, 360px));gap:16px;opacity:0;transform:translateY(22px);pointer-events:none;transition:all .6s ease}
@@ -354,5 +362,6 @@ input:focus,select:focus{border-color:rgba(124,58,237,.8);box-shadow:0 0 0 3px r
 @keyframes coreFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes spinReverse{to{transform:rotate(-360deg)}}
+@keyframes logoSpin{to{transform:rotate(360deg)}}
 @keyframes pulse{0%,100%{transform:scale(.92);opacity:.25}50%{transform:scale(1.08);opacity:.55}}
 @keyframes nebulaSpin{to{transform:rotate(360deg)}}
