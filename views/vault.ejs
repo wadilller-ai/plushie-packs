@@ -1,0 +1,28 @@
+<%- include('partials/header', { config }) %>
+
+<section class="card vaultHero">
+  <p class="vaultKicker">Members-Only Universe</p>
+  <h1 class="vaultTitle">Welcome back, <span>@<%= member.handle %></span></h1>
+  <p class="vaultLead">You now have access to the private galaxy showroom. Explore limited drops, curated bundles, and rare inventory quietly orbiting beyond the public feed.</p>
+  <div class="vaultActions">
+    <a class="btn" href="/shop">Enter Collection</a>
+    <a class="btn btn-small" href="/cart">Review Cart</a>
+  </div>
+</section>
+
+<section class="vaultGrid">
+  <article class="card vaultPanel">
+    <h2 class="h2">Chapter I — Signal</h2>
+    <p class="muted">A cinematic vault experience built for discreet discovery and premium intent.</p>
+  </article>
+  <article class="card vaultPanel">
+    <h2 class="h2">Chapter II — Orbit</h2>
+    <p class="muted">Collections with layered pricing, elevated options, and member-first access routes.</p>
+  </article>
+  <article class="card vaultPanel">
+    <h2 class="h2">Chapter III — Acquire</h2>
+    <p class="muted">Secure checkout, manual confirmation, and controlled release handling.</p>
+  </article>
+</section>
+
+<%- include('partials/footer') %>

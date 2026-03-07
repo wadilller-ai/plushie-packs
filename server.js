@@ -6,7 +6,16 @@ const cookieParser = require("cookie-parser");
 const { init, db } = require("./src/db");
 const config = require("./src/config");
 const { getUsdPrice, toCoinAmount } = require("./src/crypto");
-const { createSession, requireAdmin, destroySession } = require("./src/auth");
+const {
+  createSession,
+  requireAdmin,
+  destroySession,
+  createMember,
+  memberLogin,
+  destroyMemberSession,
+  getMemberByToken,
+  requireMember,
+} = require("./src/auth");
 
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
@@ -149,11 +158,78 @@ async function sendTelegram(text) {
 app.use((req, res, next) => {
   const cart = readCart(req);
   res.locals.cartCount = cartCount(cart);
+  res.locals.memberUser = getMemberByToken(req.cookies?.member_token);
   next();
 });
 
+
+const memberProtected = ["/shop", "/cart", "/shipping", "/shipping-cart", "/payment", "/bulk", "/vault"];
+app.use((req, res, next) => {
+  const pathName = req.path || "";
+  if (!memberProtected.some((prefix) => pathName === prefix || pathName.startsWith(`${prefix}/`))) {
+    return next();
+  }
+  return requireMember(req, res, next);
+});
+
+// Immersive entry + member access
+app.get("/", (req, res) => {
+  res.render("portal", { config, error: null, memberUser: res.locals.memberUser });
+});
+
+app.post("/auth/register", (req, res) => {
+  const handle = String(req.body.handle || "");
+  const pass = String(req.body.pass || "");
+
+  const created = createMember(handle, pass);
+  if (created.error) {
+    return res.status(400).render("portal", { config, error: created.error, memberUser: res.locals.memberUser });
+  }
+
+  const login = memberLogin(handle, pass);
+  if (!login) {
+    return res.status(400).render("portal", { config, error: "Unable to create your access.", memberUser: null });
+  }
+
+  res.cookie("member_token", login.token, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 60 * 24 * 14,
+  });
+
+  res.redirect("/vault");
+});
+
+app.post("/auth/login", (req, res) => {
+  const handle = String(req.body.handle || "");
+  const pass = String(req.body.pass || "");
+  const login = memberLogin(handle, pass);
+
+  if (!login) {
+    return res.status(401).render("portal", { config, error: "Invalid handle or passcode.", memberUser: res.locals.memberUser });
+  }
+
+  res.cookie("member_token", login.token, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 60 * 24 * 14,
+  });
+
+  res.redirect("/vault");
+});
+
+app.post("/auth/logout", (req, res) => {
+  destroyMemberSession(req.cookies?.member_token);
+  res.clearCookie("member_token");
+  res.redirect("/");
+});
+
+app.get("/vault", requireMember, (req, res) => {
+  res.render("vault", { config, member: req.member });
+});
+
 // Shop
-app.get("/", (req, res) => res.render("products", { config }));
+app.get("/shop", (req, res) => res.render("products", { config }));
 
 // Add to cart
 app.post("/cart/add", (req, res) => {
@@ -221,7 +297,7 @@ app.post("/cart/clear", (req, res) => {
 app.get("/shipping-cart", (req, res) => {
   const cart = readCart(req);
   const { lines, subtotalUsd, shippingUsd, totalUsd } = cartToLines(cart);
-  if (!lines.length) return res.redirect("/");
+  if (!lines.length) return res.redirect("/shop");
   res.render("shipping-cart", { config, lines, subtotalUsd, shippingUsd, totalUsd });
 });
 
@@ -296,7 +372,7 @@ app.get("/shipping", (req, res) => {
   const option_id = String(req.query.option_id || "");
   const product = findProduct(product_id);
   const option = findOption(product, option_id);
-  if (!product || !option) return res.redirect("/");
+  if (!product || !option) return res.redirect("/shop");
 
   const minQty = Number(option.minQty || 1);
   const qtyRaw = parseInt(req.query.qty || String(minQty), 10);
