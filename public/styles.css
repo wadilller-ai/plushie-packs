@@ -118,6 +118,8 @@ input:focus,select:focus{border-color:rgba(124,58,237,.8);box-shadow:0 0 0 3px r
 }
 .status-pending_payment{color:#60a5fa}
 .status-payment_sent{color:#a78bfa}
+.status-crypto_processing{color:#60a5fa}
+.status-not_sent{color:#f59e0b}
 .status-paid{color:var(--green)}
 .status-rejected{color:var(--danger)}
 

@@ -544,27 +544,64 @@ app.post("/payment/:code/select", (req, res) => {
   res.redirect(`/payment/${encodeURIComponent(code)}`);
 });
 
+app.get("/payment/:code/status", (req, res) => {
+  const code = req.params.code;
+  const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);
+  if (!order) return res.status(404).send("Order not found.");
+
+  const selected = findPayment(order.payment_method) || config.payments.methods[0];
+  res.render("payment-status", { config, order, selected });
+});
+
+app.post("/payment/:code/not-sent", (req, res) => {
+  const code = req.params.code;
+  const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);
+  if (!order) return res.status(404).send("Order not found.");
+
+  db.prepare("UPDATE orders SET status = 'not_sent', updated_at = ? WHERE id = ?").run(nowIso(), order.id);
+  res.redirect(`/payment/${encodeURIComponent(code)}/status`);
+});
+
 app.post("/payment/:code/confirm", async (req, res) => {
   const code = req.params.code;
   const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);
   if (!order) return res.status(404).send("Order not found.");
 
-  db.prepare("UPDATE orders SET status = 'payment_sent', updated_at = ? WHERE id = ?").run(nowIso(), order.id);
+  const selected = findPayment(order.payment_method) || config.payments.methods[0];
+  const nextStatus = selected?.isCrypto ? "crypto_processing" : "payment_sent";
+  db.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?").run(nextStatus, nowIso(), order.id);
 
-  // ✅ Include shipping details in payment-sent notification
   await sendTelegram(
-    `💸 Payment sent: ${order.order_code}\n` +
-      `Total: $${Number(order.total_usd).toFixed(2)}\n` +
-      `Method: ${order.payment_method || "not set"}\n\n` +
-      `Ship To:\n` +
-      `${order.ship_name}\n` +
-      `${order.ship_line1}${order.ship_line2 ? `, ${order.ship_line2}` : ""}\n` +
-      `${order.ship_city}, ${order.ship_state} ${order.ship_zip}\n` +
-      `${order.ship_country}\n` +
-      `${order.contact ? `\nContact: ${order.contact}\n` : ""}`
+    `💸 Payment sent: ${order.order_code}
+` +
+      `Total: $${Number(order.total_usd).toFixed(2)}
+` +
+      `Method: ${order.payment_method || "not set"}
+` +
+      `Status: ${nextStatus}
+
+` +
+      `Ship To:
+` +
+      `${order.ship_name}
+` +
+      `${order.ship_line1}${order.ship_line2 ? `, ${order.ship_line2}` : ""}
+` +
+      `${order.ship_city}, ${order.ship_state} ${order.ship_zip}
+` +
+      `${order.ship_country}
+` +
+      `${order.contact ? `
+Contact: ${order.contact}
+` : ""}`
   );
 
-  res.render("thanks", { config, order });
+  if (selected?.isCrypto) {
+    return res.redirect(`/payment/${encodeURIComponent(code)}/status`);
+  }
+
+  const updated = db.prepare("SELECT * FROM orders WHERE id = ?").get(order.id);
+  res.render("thanks", { config, order: updated });
 });
 
 // Admin
@@ -617,7 +654,7 @@ app.get("/admin/order/:code", requireAdmin, (req, res) => {
 app.post("/admin/order/:code/status", requireAdmin, async (req, res) => {
   const code = req.params.code;
   const status = String(req.body.status || "");
-  const allowed = new Set(["pending_payment", "payment_sent", "paid", "rejected"]);
+  const allowed = new Set(["pending_payment", "payment_sent", "crypto_processing", "not_sent", "paid", "rejected"]);
   if (!allowed.has(status)) return res.status(400).send("Bad status.");
 
   const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);

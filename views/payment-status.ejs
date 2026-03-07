@@ -1,0 +1,39 @@
+<%- include('partials/header', { config }) %>
+
+<section class="card">
+  <h1 class="h1">Payment Status</h1>
+  <p class="muted">Order <b><%= order.order_code %></b> • <%= selected?.label || order.payment_method || 'payment' %></p>
+
+  <% if (order.status === 'crypto_processing') { %>
+    <div class="payBox">
+      <div class="payMethod">✅ Payment sent — processing on network</div>
+      <p class="muted">Your crypto payment has been marked as sent and is currently processing. We will confirm once it clears network checks.</p>
+      <div class="status status-payment_sent">crypto_processing</div>
+    </div>
+  <% } else if (order.status === 'not_sent') { %>
+    <div class="payBox">
+      <div class="payMethod">⚠️ Payment not sent</div>
+      <p class="muted">No payment was marked as sent for this order yet. You can return to the payment page and send it when ready.</p>
+      <div class="status status-rejected">not_sent</div>
+    </div>
+  <% } else if (order.status === 'paid') { %>
+    <div class="payBox">
+      <div class="payMethod">✅ Payment confirmed</div>
+      <p class="muted">Your payment is confirmed. Your order is now in fulfillment flow.</p>
+      <div class="status status-paid">paid</div>
+    </div>
+  <% } else { %>
+    <div class="payBox">
+      <div class="payMethod">Pending payment update</div>
+      <p class="muted">Current status: <b><%= order.status %></b></p>
+      <div class="status"><%= order.status %></div>
+    </div>
+  <% } %>
+
+  <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+    <a class="btn" href="/payment/<%= encodeURIComponent(order.order_code) %>">Back to Payment</a>
+    <a class="btn btn-small" href="/vault">Back to Vault</a>
+  </div>
+</section>
+
+<%- include('partials/footer') %>
