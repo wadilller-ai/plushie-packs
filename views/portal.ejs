@@ -106,6 +106,9 @@
 
     if (buddyNodes.length) {
       const buddies = [];
+
+      function randomSpeed() {
+        return (Math.random() * 45 + 60) * (Math.random() > 0.5 ? 1 : -1);
       let lastTs = performance.now();
       let initialized = false;
 
@@ -135,6 +138,7 @@
             const size = nodeSize(node);
             const x = Math.random() * Math.max(1, maxW - size);
             const y = Math.random() * Math.max(1, maxH - size);
+            buddies.push({ node, x, y, vx: randomSpeed(), vy: randomSpeed(), size, radius: size * 0.42 });
             buddies.push({
               node,
               x,
@@ -233,6 +237,7 @@
         b.vx -= nx * impulse;
         b.vy -= ny * impulse;
 
+        a.vx *= 1.03; a.vy *= 1.03; b.vx *= 1.03; b.vy *= 1.03;
         // extra pop so collisions feel lively
         a.vx *= 1.03;
         a.vy *= 1.03;
@@ -243,6 +248,7 @@
         bounceWalls(b);
       }
 
+      function step(dt) {
       function render() {
         for (const b of buddies) {
           const rot = Math.max(-12, Math.min(12, (b.vx + b.vy) * 0.03));
@@ -270,6 +276,35 @@
             collide(buddies[i], buddies[j]);
           }
         }
+      }
+
+      function render() {
+        for (const b of buddies) {
+          const rot = Math.max(-12, Math.min(12, (b.vx + b.vy) * 0.03));
+          b.node.style.transform = `translate3d(${b.x}px, ${b.y}px, 0) rotate(${rot}deg)`;
+        }
+      }
+
+      setupBuddies();
+      render();
+
+      let last = performance.now();
+      function frame(ts) {
+        const dt = Math.min(0.05, (ts - last) / 1000);
+        last = ts;
+        step(dt);
+        render();
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+
+      // Fallback timer so motion still updates if RAF throttles on some browsers/devices.
+      setInterval(() => {
+        step(1 / 45);
+        render();
+      }, 22);
+
+      window.addEventListener('resize', () => setupBuddies(false));
 
         render();
         requestAnimationFrame(tick);
