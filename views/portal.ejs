@@ -105,6 +105,80 @@
     enterButton.addEventListener('click', cinematicEnter);
 
     if (buddyNodes.length) {
+      const state = {
+        buddies: [],
+        width: window.innerWidth,
+        height: window.innerHeight,
+        last: performance.now()
+      };
+
+      function speedVector() {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 95 + Math.random() * 70;
+        return { vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed };
+      }
+
+      function clampSpeed(buddy) {
+        const speed = Math.hypot(buddy.vx, buddy.vy) || 1;
+        const min = 75;
+        const max = 190;
+        if (speed < min || speed > max) {
+          const target = speed < min ? min : max;
+          const scale = target / speed;
+          buddy.vx *= scale;
+          buddy.vy *= scale;
+        }
+      }
+
+      function keepInside(buddy) {
+        const maxX = Math.max(0, state.width - buddy.size);
+        const maxY = Math.max(0, state.height - buddy.size);
+        buddy.x = Math.max(0, Math.min(maxX, buddy.x));
+        buddy.y = Math.max(0, Math.min(maxY, buddy.y));
+      }
+
+      function initBuddies() {
+        state.width = window.innerWidth;
+        state.height = window.innerHeight;
+
+        state.buddies = buddyNodes.map((node) => {
+          const size = Math.max(42, Math.round(node.getBoundingClientRect().width || parseFloat(getComputedStyle(node).width) || 92));
+          const velocity = speedVector();
+          return {
+            node,
+            size,
+            radius: size * 0.42,
+            x: Math.random() * Math.max(1, state.width - size),
+            y: Math.random() * Math.max(1, state.height - size),
+            vx: velocity.vx,
+            vy: velocity.vy
+          };
+        });
+
+        for (const buddy of state.buddies) {
+          keepInside(buddy);
+          buddy.node.style.transform = `translate3d(${buddy.x}px, ${buddy.y}px, 0)`;
+        }
+      }
+
+      function wallBounce(buddy) {
+        const maxX = Math.max(0, state.width - buddy.size);
+        const maxY = Math.max(0, state.height - buddy.size);
+
+        if (buddy.x <= 0) {
+          buddy.x = 0;
+          buddy.vx = Math.abs(buddy.vx);
+        } else if (buddy.x >= maxX) {
+          buddy.x = maxX;
+          buddy.vx = -Math.abs(buddy.vx);
+        }
+
+        if (buddy.y <= 0) {
+          buddy.y = 0;
+          buddy.vy = Math.abs(buddy.vy);
+        } else if (buddy.y >= maxY) {
+          buddy.y = maxY;
+          buddy.vy = -Math.abs(buddy.vy);
       const buddies = [];
 
       function randomSpeed() {
@@ -208,6 +282,10 @@
       }
 
       function collide(a, b) {
+        const ax = a.x + a.size * 0.5;
+        const ay = a.y + a.size * 0.5;
+        const bx = b.x + b.size * 0.5;
+        const by = b.y + b.size * 0.5;
         const ax = a.x + a.size / 2;
         const ay = a.y + a.size / 2;
         const bx = b.x + b.size / 2;
@@ -228,6 +306,61 @@
         b.x += nx * overlap * 0.5;
         b.y += ny * overlap * 0.5;
 
+        const relVel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+        if (relVel > 0) return;
+
+        const impulse = -1.05 * relVel;
+        a.vx -= impulse * nx;
+        a.vy -= impulse * ny;
+        b.vx += impulse * nx;
+        b.vy += impulse * ny;
+
+        clampSpeed(a);
+        clampSpeed(b);
+        wallBounce(a);
+        wallBounce(b);
+      }
+
+      function draw() {
+        for (const buddy of state.buddies) {
+          const rot = Math.max(-16, Math.min(16, (buddy.vx + buddy.vy) * 0.02));
+          buddy.node.style.transform = `translate3d(${buddy.x}px, ${buddy.y}px, 0) rotate(${rot}deg)`;
+        }
+      }
+
+      function frame(time) {
+        const dt = Math.min(0.045, (time - state.last) / 1000 || 0.016);
+        state.last = time;
+
+        for (const buddy of state.buddies) {
+          buddy.x += buddy.vx * dt;
+          buddy.y += buddy.vy * dt;
+          wallBounce(buddy);
+        }
+
+        for (let i = 0; i < state.buddies.length; i++) {
+          for (let j = i + 1; j < state.buddies.length; j++) {
+            collide(state.buddies[i], state.buddies[j]);
+          }
+        }
+
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      initBuddies();
+      draw();
+      requestAnimationFrame(frame);
+
+      window.addEventListener('resize', () => {
+        state.width = window.innerWidth;
+        state.height = window.innerHeight;
+        for (const buddy of state.buddies) {
+          buddy.size = Math.max(42, Math.round(buddy.node.getBoundingClientRect().width || buddy.size));
+          buddy.radius = buddy.size * 0.42;
+          keepInside(buddy);
+        }
+      });
         const avn = a.vx * nx + a.vy * ny;
         const bvn = b.vx * nx + b.vy * ny;
         const impulse = bvn - avn;
