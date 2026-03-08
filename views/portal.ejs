@@ -105,6 +105,8 @@
     enterButton.addEventListener('click', cinematicEnter);
 
     if (buddyNodes.length) {
+      const buddies = [];
+      let lastTs = performance.now();
       const state = {
         buddies: [],
         width: window.innerWidth,
@@ -422,6 +424,7 @@
             collide(buddies[i], buddies[j]);
           }
         }
+
       }
 
       function render() {
