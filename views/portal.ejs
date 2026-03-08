@@ -179,6 +179,105 @@
         } else if (buddy.y >= maxY) {
           buddy.y = maxY;
           buddy.vy = -Math.abs(buddy.vy);
+      const buddies = [];
+
+      function randomSpeed() {
+        return (Math.random() * 45 + 60) * (Math.random() > 0.5 ? 1 : -1);
+      let lastTs = performance.now();
+      let initialized = false;
+
+      function randomSpeed() {
+        return (Math.random() * 45 + 60) * (Math.random() > 0.5 ? 1 : -1);
+        return (Math.random() * 18 + 28) * (Math.random() > 0.5 ? 1 : -1);
+      }
+
+      function nodeSize(node) {
+        const styleW = parseFloat(getComputedStyle(node).width);
+        return Number.isFinite(styleW) && styleW > 10 ? styleW : (window.innerWidth <= 860 ? 80 : 120);
+      }
+
+      function clampToScreen(b) {
+        const maxX = Math.max(0, window.innerWidth - b.size);
+        const maxY = Math.max(0, window.innerHeight - b.size);
+        b.x = Math.max(0, Math.min(maxX, b.x));
+        b.y = Math.max(0, Math.min(maxY, b.y));
+      }
+
+      function setupBuddies(resetVelocity = false) {
+        const maxW = window.innerWidth;
+        const maxH = window.innerHeight;
+
+        if (!buddies.length) {
+          buddyNodes.forEach((node) => {
+            const size = nodeSize(node);
+            const x = Math.random() * Math.max(1, maxW - size);
+            const y = Math.random() * Math.max(1, maxH - size);
+            buddies.push({ node, x, y, vx: randomSpeed(), vy: randomSpeed(), size, radius: size * 0.42 });
+            buddies.push({
+              node,
+              x,
+              y,
+              vx: randomSpeed(),
+              vy: randomSpeed(),
+              size,
+              radius: size * 0.42,
+            });
+          });
+        } else {
+          for (const b of buddies) {
+            b.size = nodeSize(b.node);
+            b.radius = b.size * 0.42;
+            clampToScreen(b);
+            if (resetVelocity) {
+              b.vx = randomSpeed();
+              b.vy = randomSpeed();
+            }
+          }
+        }
+      }
+
+      function bounceWalls(b) {
+        const maxX = Math.max(0, window.innerWidth - b.size);
+        const maxY = Math.max(0, window.innerHeight - b.size);
+
+      function randomSpeed() {
+        return (Math.random() * 26 + 38) * (Math.random() > 0.5 ? 1 : -1);
+      }
+
+      function setupBuddies() {
+        buddies.length = 0;
+        const maxW = window.innerWidth;
+        const maxH = window.innerHeight;
+
+        buddyNodes.forEach((node, idx) => {
+          const size = node.getBoundingClientRect().width || 100;
+          const radius = size * 0.42;
+          const x = Math.random() * Math.max(10, maxW - size);
+          const y = Math.random() * Math.max(10, maxH - size);
+          const vx = randomSpeed() * (1 + idx * 0.02);
+          const vy = randomSpeed() * (1 + idx * 0.02);
+          buddies.push({ node, x, y, vx, vy, size, radius });
+        });
+      }
+
+      function bounceWalls(b) {
+        const maxX = window.innerWidth - b.size;
+        const maxY = window.innerHeight - b.size;
+
+        if (b.x <= 0) {
+          b.x = 0;
+          b.vx = Math.abs(b.vx);
+        } else if (b.x >= maxX) {
+          b.x = maxX;
+          b.vx = -Math.abs(b.vx);
+        }
+
+        if (b.y <= 0) {
+          b.y = 0;
+          b.vy = Math.abs(b.vy);
+        } else if (b.y >= maxY) {
+          b.y = maxY;
+          b.vy = -Math.abs(b.vy);
         }
       }
 
@@ -187,10 +286,15 @@
         const ay = a.y + a.size * 0.5;
         const bx = b.x + b.size * 0.5;
         const by = b.y + b.size * 0.5;
+        const ax = a.x + a.size / 2;
+        const ay = a.y + a.size / 2;
+        const bx = b.x + b.size / 2;
+        const by = b.y + b.size / 2;
         const dx = bx - ax;
         const dy = by - ay;
         const dist = Math.hypot(dx, dy) || 0.0001;
         const minDist = a.radius + b.radius;
+
         if (dist >= minDist) return;
 
         const nx = dx / dist;
@@ -224,6 +328,7 @@
         }
       }
 
+      function advance(dt) {
       function frame(time) {
         const dt = Math.min(0.045, (time - state.last) / 1000 || 0.016);
         state.last = time;
@@ -241,12 +346,24 @@
         }
 
         draw();
+      }
+
+      function frame(time) {
+        const dt = Math.min(0.045, (time - state.last) / 1000 || 0.016);
+        state.last = time;
+        advance(dt);
         requestAnimationFrame(frame);
       }
 
       initBuddies();
       draw();
       requestAnimationFrame(frame);
+      setInterval(() => {
+        const now = performance.now();
+        const dt = Math.min(0.045, (now - state.last) / 1000 || 1 / 30);
+        state.last = now;
+        advance(dt);
+      }, 33);
 
       window.addEventListener('resize', () => {
         state.width = window.innerWidth;
@@ -257,6 +374,124 @@
           keepInside(buddy);
         }
       });
+        const avn = a.vx * nx + a.vy * ny;
+        const bvn = b.vx * nx + b.vy * ny;
+        const impulse = bvn - avn;
+
+        a.vx += nx * impulse;
+        a.vy += ny * impulse;
+        b.vx -= nx * impulse;
+        b.vy -= ny * impulse;
+
+        a.vx *= 1.03; a.vy *= 1.03; b.vx *= 1.03; b.vy *= 1.03;
+        // extra pop so collisions feel lively
+        a.vx *= 1.03;
+        a.vy *= 1.03;
+        b.vx *= 1.03;
+        b.vy *= 1.03;
+
+        bounceWalls(a);
+        bounceWalls(b);
+      }
+
+      function step(dt) {
+      function render() {
+        for (const b of buddies) {
+          const rot = Math.max(-12, Math.min(12, (b.vx + b.vy) * 0.03));
+          b.node.style.transform = `translate3d(${b.x}px, ${b.y}px, 0) rotate(${rot}deg)`;
+          b.node.style.transform = `translate3d(${b.x}px, ${b.y}px, 0)`;
+        }
+      }
+
+      function tick(ts) {
+        const dt = Math.min(0.05, (ts - lastTs) / 1000);
+      }
+
+      function tick(ts) {
+        const dt = Math.min(0.04, (ts - lastTs) / 1000);
+        lastTs = ts;
+
+        for (const b of buddies) {
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+          bounceWalls(b);
+        }
+
+        for (let i = 0; i < buddies.length; i++) {
+          for (let j = i + 1; j < buddies.length; j++) {
+            collide(buddies[i], buddies[j]);
+          }
+        }
+      }
+
+      function render() {
+        for (const b of buddies) {
+          const rot = Math.max(-12, Math.min(12, (b.vx + b.vy) * 0.03));
+          b.node.style.transform = `translate3d(${b.x}px, ${b.y}px, 0) rotate(${rot}deg)`;
+        }
+      }
+
+      setupBuddies();
+      render();
+
+      let last = performance.now();
+      function frame(ts) {
+        const dt = Math.min(0.05, (ts - last) / 1000);
+        last = ts;
+        step(dt);
+        render();
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+
+      // Fallback timer so motion still updates if RAF throttles on some browsers/devices.
+      setInterval(() => {
+        step(1 / 45);
+        render();
+      }, 22);
+
+      window.addEventListener('resize', () => setupBuddies(false));
+
+        render();
+        requestAnimationFrame(tick);
+      }
+
+      function startPhysics() {
+        if (initialized) return;
+        initialized = true;
+        setupBuddies();
+        render();
+        requestAnimationFrame((ts) => {
+          lastTs = ts;
+          requestAnimationFrame(tick);
+        });
+      }
+
+      let loadedCount = 0;
+      buddyNodes.forEach((node) => {
+        if (node.complete) loadedCount += 1;
+        else node.addEventListener('load', () => {
+          loadedCount += 1;
+          if (loadedCount === buddyNodes.length) startPhysics();
+        }, { once: true });
+      });
+      if (loadedCount === buddyNodes.length) startPhysics();
+
+      window.addEventListener('resize', () => setupBuddies(false));
+        for (const b of buddies) {
+          b.node.style.transform = `translate(${b.x}px, ${b.y}px)`;
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      setupBuddies();
+      requestAnimationFrame((ts) => {
+        lastTs = ts;
+        requestAnimationFrame(tick);
+      });
+
+      window.addEventListener('resize', setupBuddies);
     }
   </script>
 </body>
