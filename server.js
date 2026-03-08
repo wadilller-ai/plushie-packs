@@ -6,7 +6,16 @@ const cookieParser = require("cookie-parser");
 const { init, db } = require("./src/db");
 const config = require("./src/config");
 const { getUsdPrice, toCoinAmount } = require("./src/crypto");
-const { createSession, requireAdmin, destroySession } = require("./src/auth");
+const {
+  createSession,
+  requireAdmin,
+  destroySession,
+  createMember,
+  memberLogin,
+  destroyMemberSession,
+  getMemberByToken,
+  requireMember,
+} = require("./src/auth");
 
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
@@ -149,11 +158,81 @@ async function sendTelegram(text) {
 app.use((req, res, next) => {
   const cart = readCart(req);
   res.locals.cartCount = cartCount(cart);
+  res.locals.memberUser = getMemberByToken(req.cookies?.member_token);
   next();
 });
 
+
+const memberProtected = ["/shop", "/cart", "/shipping", "/shipping-cart", "/payment", "/bulk", "/vault"];
+app.use((req, res, next) => {
+  const pathName = req.path || "";
+  if (!memberProtected.some((prefix) => pathName === prefix || pathName.startsWith(`${prefix}/`))) {
+    return next();
+  }
+  return requireMember(req, res, next);
+});
+
+// Immersive entry + member access
+app.get("/", (req, res) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  res.render("portal", { config, error: null, memberUser: res.locals.memberUser });
+});
+
+app.post("/auth/register", (req, res) => {
+  const handle = String(req.body.handle || "");
+  const pass = String(req.body.pass || "");
+
+  const created = createMember(handle, pass);
+  if (created.error) {
+    return res.status(400).render("portal", { config, error: created.error, memberUser: res.locals.memberUser });
+  }
+
+  const login = memberLogin(handle, pass);
+  if (!login) {
+    return res.status(400).render("portal", { config, error: "Unable to create your access.", memberUser: null });
+  }
+
+  res.cookie("member_token", login.token, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 60 * 24 * 14,
+  });
+
+  res.redirect("/vault");
+});
+
+app.post("/auth/login", (req, res) => {
+  const handle = String(req.body.handle || "");
+  const pass = String(req.body.pass || "");
+  const login = memberLogin(handle, pass);
+
+  if (!login) {
+    return res.status(401).render("portal", { config, error: "Invalid handle or passcode.", memberUser: res.locals.memberUser });
+  }
+
+  res.cookie("member_token", login.token, {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 60 * 24 * 14,
+  });
+
+  res.redirect("/vault");
+});
+
+app.post("/auth/logout", (req, res) => {
+  destroyMemberSession(req.cookies?.member_token);
+  res.clearCookie("member_token");
+  res.redirect("/");
+});
+
+app.get("/vault", requireMember, (req, res) => {
+  res.render("vault", { config, member: req.member });
+});
+
 // Shop
-app.get("/", (req, res) => res.render("products", { config }));
+app.get("/shop", (req, res) => res.render("products", { config }));
 
 // Add to cart
 app.post("/cart/add", (req, res) => {
@@ -221,7 +300,7 @@ app.post("/cart/clear", (req, res) => {
 app.get("/shipping-cart", (req, res) => {
   const cart = readCart(req);
   const { lines, subtotalUsd, shippingUsd, totalUsd } = cartToLines(cart);
-  if (!lines.length) return res.redirect("/");
+  if (!lines.length) return res.redirect("/shop");
   res.render("shipping-cart", { config, lines, subtotalUsd, shippingUsd, totalUsd });
 });
 
@@ -296,7 +375,7 @@ app.get("/shipping", (req, res) => {
   const option_id = String(req.query.option_id || "");
   const product = findProduct(product_id);
   const option = findOption(product, option_id);
-  if (!product || !option) return res.redirect("/");
+  if (!product || !option) return res.redirect("/shop");
 
   const minQty = Number(option.minQty || 1);
   const qtyRaw = parseInt(req.query.qty || String(minQty), 10);
@@ -468,27 +547,64 @@ app.post("/payment/:code/select", (req, res) => {
   res.redirect(`/payment/${encodeURIComponent(code)}`);
 });
 
+app.get("/payment/:code/status", (req, res) => {
+  const code = req.params.code;
+  const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);
+  if (!order) return res.status(404).send("Order not found.");
+
+  const selected = findPayment(order.payment_method) || config.payments.methods[0];
+  res.render("payment-status", { config, order, selected });
+});
+
+app.post("/payment/:code/not-sent", (req, res) => {
+  const code = req.params.code;
+  const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);
+  if (!order) return res.status(404).send("Order not found.");
+
+  db.prepare("UPDATE orders SET status = 'not_sent', updated_at = ? WHERE id = ?").run(nowIso(), order.id);
+  res.redirect(`/payment/${encodeURIComponent(code)}/status`);
+});
+
 app.post("/payment/:code/confirm", async (req, res) => {
   const code = req.params.code;
   const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);
   if (!order) return res.status(404).send("Order not found.");
 
-  db.prepare("UPDATE orders SET status = 'payment_sent', updated_at = ? WHERE id = ?").run(nowIso(), order.id);
+  const selected = findPayment(order.payment_method) || config.payments.methods[0];
+  const nextStatus = selected?.isCrypto ? "crypto_processing" : "payment_sent";
+  db.prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?").run(nextStatus, nowIso(), order.id);
 
-  // ✅ Include shipping details in payment-sent notification
   await sendTelegram(
-    `💸 Payment sent: ${order.order_code}\n` +
-      `Total: $${Number(order.total_usd).toFixed(2)}\n` +
-      `Method: ${order.payment_method || "not set"}\n\n` +
-      `Ship To:\n` +
-      `${order.ship_name}\n` +
-      `${order.ship_line1}${order.ship_line2 ? `, ${order.ship_line2}` : ""}\n` +
-      `${order.ship_city}, ${order.ship_state} ${order.ship_zip}\n` +
-      `${order.ship_country}\n` +
-      `${order.contact ? `\nContact: ${order.contact}\n` : ""}`
+    `💸 Payment sent: ${order.order_code}
+` +
+      `Total: $${Number(order.total_usd).toFixed(2)}
+` +
+      `Method: ${order.payment_method || "not set"}
+` +
+      `Status: ${nextStatus}
+
+` +
+      `Ship To:
+` +
+      `${order.ship_name}
+` +
+      `${order.ship_line1}${order.ship_line2 ? `, ${order.ship_line2}` : ""}
+` +
+      `${order.ship_city}, ${order.ship_state} ${order.ship_zip}
+` +
+      `${order.ship_country}
+` +
+      `${order.contact ? `
+Contact: ${order.contact}
+` : ""}`
   );
 
-  res.render("thanks", { config, order });
+  if (selected?.isCrypto) {
+    return res.redirect(`/payment/${encodeURIComponent(code)}/status`);
+  }
+
+  const updated = db.prepare("SELECT * FROM orders WHERE id = ?").get(order.id);
+  res.render("thanks", { config, order: updated });
 });
 
 // Admin
@@ -541,7 +657,7 @@ app.get("/admin/order/:code", requireAdmin, (req, res) => {
 app.post("/admin/order/:code/status", requireAdmin, async (req, res) => {
   const code = req.params.code;
   const status = String(req.body.status || "");
-  const allowed = new Set(["pending_payment", "payment_sent", "paid", "rejected"]);
+  const allowed = new Set(["pending_payment", "payment_sent", "crypto_processing", "not_sent", "paid", "rejected"]);
   if (!allowed.has(status)) return res.status(400).send("Bad status.");
 
   const order = db.prepare("SELECT * FROM orders WHERE order_code = ?").get(code);

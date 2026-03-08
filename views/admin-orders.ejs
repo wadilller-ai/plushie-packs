@@ -11,7 +11,7 @@
   <form method="GET" action="/admin/orders" class="filters">
     <select name="status">
       <option value="">All statuses</option>
-      <% ['pending_payment','payment_sent','paid','rejected'].forEach(s => { %>
+      <% ['pending_payment','payment_sent','crypto_processing','not_sent','paid','rejected'].forEach(s => { %>
         <option value="<%= s %>" <%= status===s?'selected':'' %>><%= s %></option>
       <% }) %>
     </select>
