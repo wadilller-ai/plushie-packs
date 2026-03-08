@@ -110,6 +110,7 @@
       let initialized = false;
 
       function randomSpeed() {
+        return (Math.random() * 45 + 60) * (Math.random() > 0.5 ? 1 : -1);
         return (Math.random() * 18 + 28) * (Math.random() > 0.5 ? 1 : -1);
       }
 
@@ -232,12 +233,20 @@
         b.vx -= nx * impulse;
         b.vy -= ny * impulse;
 
+        // extra pop so collisions feel lively
+        a.vx *= 1.03;
+        a.vy *= 1.03;
+        b.vx *= 1.03;
+        b.vy *= 1.03;
+
         bounceWalls(a);
         bounceWalls(b);
       }
 
       function render() {
         for (const b of buddies) {
+          const rot = Math.max(-12, Math.min(12, (b.vx + b.vy) * 0.03));
+          b.node.style.transform = `translate3d(${b.x}px, ${b.y}px, 0) rotate(${rot}deg)`;
           b.node.style.transform = `translate3d(${b.x}px, ${b.y}px, 0)`;
         }
       }
