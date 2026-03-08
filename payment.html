@@ -1,0 +1,9 @@
+<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Payment</title><link rel="stylesheet" href="./public/styles.css"/></head><body>
+<header class="topbar"><div class="wrap topbar-inner"><div class="logo"><div class="logo-mark"></div><div class="logo-text">Plushie Packs</div></div></div></header>
+<main class="wrap"><section class="card"><h1 class="h1">Payment</h1><label>Method</label><select id="method"><option value="chime">Chime</option><option value="venmo">Venmo</option><option value="btc">Bitcoin</option><option value="eth">Ethereum</option></select><div class="payBox" id="paymentDetails"></div><a class="btn" href="./thanks.html">I Sent Payment</a></section></main>
+<script>
+const details={chime:'Send to $plushiepacks',venmo:'Send to @plushiepacks · 4 digit confirm code 0995',btc:'Send BTC to bc1qf4rg4vr92e6svftuyc3rxzskschgkxknt2g7u3',eth:'Send ETH to 0xb4FAC811E8332092BD969C1c93148672fBadb04D'};
+const s=document.getElementById('method'); const box=document.getElementById('paymentDetails'); function draw(){box.innerHTML='<div class="payMethod">'+s.options[s.selectedIndex].text+'</div><div class="payLine mono">'+details[s.value]+'</div>';}
+s.addEventListener('change',draw); draw();
+</script>
+</body></html>
