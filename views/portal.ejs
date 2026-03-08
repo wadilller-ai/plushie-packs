@@ -224,10 +224,7 @@
         }
       }
 
-      function frame(time) {
-        const dt = Math.min(0.045, (time - state.last) / 1000 || 0.016);
-        state.last = time;
-
+      function advance(dt) {
         for (const buddy of state.buddies) {
           buddy.x += buddy.vx * dt;
           buddy.y += buddy.vy * dt;
@@ -241,12 +238,24 @@
         }
 
         draw();
+      }
+
+      function frame(time) {
+        const dt = Math.min(0.045, (time - state.last) / 1000 || 0.016);
+        state.last = time;
+        advance(dt);
         requestAnimationFrame(frame);
       }
 
       initBuddies();
       draw();
       requestAnimationFrame(frame);
+      setInterval(() => {
+        const now = performance.now();
+        const dt = Math.min(0.045, (now - state.last) / 1000 || 1 / 30);
+        state.last = now;
+        advance(dt);
+      }, 33);
 
       window.addEventListener('resize', () => {
         state.width = window.innerWidth;
