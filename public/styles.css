@@ -378,12 +378,6 @@ input:focus,select:focus{border-color:rgba(124,58,237,.8);box-shadow:0 0 0 3px r
 .authCard h2{margin:0 0 8px}
 .portalMemberActions{display:flex;align-items:center;gap:12px;margin-top:20px}
 
-.portalShell{padding-bottom:70px}
-.portalShell.entered{padding-bottom:70px}
-@media (max-width:860px){
-  .portalShell{padding:5vh 12px 48px;}
-  .authDeck{grid-template-columns:1fr;max-height:46vh;width:min(92vw, 360px);}
-  .authCard{padding:14px;}
 .portalBuddies{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
 .buddy{
   position:absolute;
