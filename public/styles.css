@@ -371,6 +371,8 @@ input:focus,select:focus{border-color:rgba(124,58,237,.8);box-shadow:0 0 0 3px r
 }
 .portalPulse{position:absolute;inset:-40px;border-radius:50%;border:1px solid rgba(160,178,255,.2);animation:pulse 4s ease-in-out infinite}
 .portalEnter{margin-top:24px;padding:12px 22px;border-radius:999px;border:1px solid rgba(147,170,255,.44);color:#eef3ff;background:rgba(14,18,35,.55);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.authDeck{margin-top:28px;display:grid;grid-template-columns:repeat(2,minmax(240px, 360px));gap:16px;opacity:1;transform:translateY(0);pointer-events:auto;transition:all .6s ease;max-height:48vh;overflow:auto;padding-right:4px}
+.portalPage.js-enabled .authDeck:not(.open){opacity:0;transform:translateY(22px);pointer-events:none}
 .authDeck{margin-top:28px;display:grid;grid-template-columns:repeat(2,minmax(240px, 360px));gap:16px;opacity:0;transform:translateY(22px);pointer-events:none;transition:all .6s ease;max-height:48vh;overflow:auto;padding-right:4px}
 .authDeck{margin-top:28px;display:grid;grid-template-columns:repeat(2,minmax(240px, 360px));gap:16px;opacity:0;transform:translateY(22px);pointer-events:none;transition:all .6s ease}
 .authDeck.open{opacity:1;transform:translateY(0);pointer-events:auto}
@@ -378,6 +380,12 @@ input:focus,select:focus{border-color:rgba(124,58,237,.8);box-shadow:0 0 0 3px r
 .authCard h2{margin:0 0 8px}
 .portalMemberActions{display:flex;align-items:center;gap:12px;margin-top:20px}
 
+.portalShell{padding-bottom:70px}
+.portalShell.entered{padding-bottom:70px}
+@media (max-width:860px){
+  .portalShell{padding:5vh 12px 48px;}
+  .authDeck{grid-template-columns:1fr;max-height:46vh;width:min(92vw, 360px);}
+  .authCard{padding:14px;}
 .portalBuddies{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
 .buddy{
   position:absolute;

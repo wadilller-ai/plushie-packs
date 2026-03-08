@@ -25,6 +25,7 @@
 
     <button class="portalEnter" id="enterButton" type="button">Open Portal</button>
 
+    <div class="authDeck" id="authDeck" aria-hidden="false">
     <div class="authDeck" id="authDeck" aria-hidden="true">
       <section class="authCard">
         <h2>Member Access</h2>
@@ -61,6 +62,23 @@
     <% } %>
   </main>
 
+
+
+
+  <script>
+    document.body.classList.add('js-enabled');
+
+    const stars = document.querySelector('.portalStars');
+    if (stars) {
+      for (let i = 0; i < 80; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'star';
+        dot.style.left = `${Math.random() * 100}%`;
+        dot.style.top = `${Math.random() * 100}%`;
+        dot.style.animationDelay = `${Math.random() * 6}s`;
+        dot.style.opacity = (Math.random() * 0.8 + 0.15).toFixed(2);
+        stars.appendChild(dot);
+      }
   <div class="portalBuddies" aria-hidden="true">
     <img class="buddy buddy-1" src="/public/img/portal-buddy-strawberry.svg" alt="" />
     <img class="buddy buddy-2" src="/public/img/portal-buddy-orange.svg" alt="" />
@@ -88,6 +106,13 @@
     const enterButton = document.getElementById('enterButton');
     const authDeck = document.getElementById('authDeck');
     const shell = document.getElementById('portalShell');
+    if (authDeck) {
+      authDeck.classList.remove('open');
+      authDeck.setAttribute('aria-hidden', 'true');
+    }
+
+    function revealDeck() {
+      if (!authDeck || !shell) return;
     const buddyNodes = Array.from(document.querySelectorAll('.buddy'));
 
     function revealDeck() {
@@ -97,9 +122,13 @@
     }
 
     function cinematicEnter() {
+      if (!shell) return;
       shell.classList.add('transitioning');
       setTimeout(revealDeck, 550);
     }
+
+    if (enterCore) enterCore.addEventListener('click', cinematicEnter);
+    if (enterButton) enterButton.addEventListener('click', cinematicEnter);
 
     enterCore.addEventListener('click', cinematicEnter);
     enterButton.addEventListener('click', cinematicEnter);
