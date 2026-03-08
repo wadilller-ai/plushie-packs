@@ -111,6 +111,7 @@
 
       function randomSpeed() {
         return (Math.random() * 45 + 60) * (Math.random() > 0.5 ? 1 : -1);
+        return (Math.random() * 18 + 28) * (Math.random() > 0.5 ? 1 : -1);
       }
 
       function nodeSize(node) {
@@ -161,6 +162,30 @@
         const maxX = Math.max(0, window.innerWidth - b.size);
         const maxY = Math.max(0, window.innerHeight - b.size);
 
+      function randomSpeed() {
+        return (Math.random() * 26 + 38) * (Math.random() > 0.5 ? 1 : -1);
+      }
+
+      function setupBuddies() {
+        buddies.length = 0;
+        const maxW = window.innerWidth;
+        const maxH = window.innerHeight;
+
+        buddyNodes.forEach((node, idx) => {
+          const size = node.getBoundingClientRect().width || 100;
+          const radius = size * 0.42;
+          const x = Math.random() * Math.max(10, maxW - size);
+          const y = Math.random() * Math.max(10, maxH - size);
+          const vx = randomSpeed() * (1 + idx * 0.02);
+          const vy = randomSpeed() * (1 + idx * 0.02);
+          buddies.push({ node, x, y, vx, vy, size, radius });
+        });
+      }
+
+      function bounceWalls(b) {
+        const maxX = window.innerWidth - b.size;
+        const maxY = window.innerHeight - b.size;
+
         if (b.x <= 0) {
           b.x = 0;
           b.vx = Math.abs(b.vx);
@@ -187,6 +212,7 @@
         const dy = by - ay;
         const dist = Math.hypot(dx, dy) || 0.0001;
         const minDist = a.radius + b.radius;
+
         if (dist >= minDist) return;
 
         const nx = dx / dist;
@@ -221,11 +247,16 @@
         for (const b of buddies) {
           const rot = Math.max(-12, Math.min(12, (b.vx + b.vy) * 0.03));
           b.node.style.transform = `translate3d(${b.x}px, ${b.y}px, 0) rotate(${rot}deg)`;
+          b.node.style.transform = `translate3d(${b.x}px, ${b.y}px, 0)`;
         }
       }
 
       function tick(ts) {
         const dt = Math.min(0.05, (ts - lastTs) / 1000);
+      }
+
+      function tick(ts) {
+        const dt = Math.min(0.04, (ts - lastTs) / 1000);
         lastTs = ts;
 
         for (const b of buddies) {
@@ -266,6 +297,20 @@
       if (loadedCount === buddyNodes.length) startPhysics();
 
       window.addEventListener('resize', () => setupBuddies(false));
+        for (const b of buddies) {
+          b.node.style.transform = `translate(${b.x}px, ${b.y}px)`;
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      setupBuddies();
+      requestAnimationFrame((ts) => {
+        lastTs = ts;
+        requestAnimationFrame(tick);
+      });
+
+      window.addEventListener('resize', setupBuddies);
     }
   </script>
 </body>
