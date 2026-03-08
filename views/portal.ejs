@@ -16,6 +16,7 @@
       <div class="error" style="max-width:540px;"><%= error %></div>
     <% } %>
 
+    <button class="portalCore" id="enterCore" type="button" aria-label="Enter Portal" onclick="window.portalEnter && window.portalEnter()">
     <button class="portalCore" id="enterCore" type="button" aria-label="Enter Portal">
       <span class="portalRing ringA"></span>
       <span class="portalRing ringB"></span>
@@ -23,6 +24,9 @@
       <span class="portalPulse"></span>
     </button>
 
+    <button class="portalEnter" id="enterButton" type="button" onclick="window.portalEnter && window.portalEnter()">Open Portal</button>
+
+    <div class="authDeck" id="authDeck" aria-hidden="false">
     <button class="portalEnter" id="enterButton" type="button">Open Portal</button>
 
     <div class="authDeck" id="authDeck" aria-hidden="false">
@@ -124,6 +128,14 @@
     function cinematicEnter() {
       if (!shell) return;
       shell.classList.add('transitioning');
+      if (authDeck?.classList.contains('open')) return;
+      window.setTimeout(revealDeck, 220);
+    }
+
+    window.portalEnter = cinematicEnter;
+    if (enterCore) enterCore.addEventListener('click', cinematicEnter);
+    if (enterButton) enterButton.addEventListener('click', cinematicEnter);
+
       setTimeout(revealDeck, 550);
     }
 
