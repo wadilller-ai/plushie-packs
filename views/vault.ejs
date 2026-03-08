@@ -1,0 +1,28 @@
+<%- include('partials/header', { config }) %>
+
+<section class="card vaultHero">
+  <p class="vaultKicker">Members-Only Universe</p>
+  <h1 class="vaultTitle">Welcome back, <span>@<%= member.handle %></span></h1>
+  <p class="vaultLead">You now have access to the private Plushie Packs vault. Explore limited drops, premium bundles, and rare inventory reserved for members only.</p>
+  <div class="vaultActions">
+    <a class="btn" href="/shop">Enter Collection</a>
+    <a class="btn btn-small" href="/cart">Review Cart</a>
+  </div>
+</section>
+
+<section class="vaultGrid">
+  <article class="card vaultPanel">
+    <h2 class="h2">Step 1 — Discover</h2>
+    <p class="muted">Browse rare plushies, limited drops, and premium picks in one private vault.</p>
+  </article>
+  <article class="card vaultPanel">
+    <h2 class="h2">Step 2 — Select</h2>
+    <p class="muted">Explore standard packs, bulk options, and curated bundles with member-first access.</p>
+  </article>
+  <article class="card vaultPanel">
+    <h2 class="h2">Step 3 — Checkout</h2>
+    <p class="muted">Place your order through secure manual checkout with confirmation after review.</p>
+  </article>
+</section>
+
+<%- include('partials/footer') %>
