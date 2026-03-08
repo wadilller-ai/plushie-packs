@@ -39,6 +39,7 @@ module.exports = {
   payments: {
     methods: [
       { key: "chime", label: "Chime" },
+      { key: "venmo", label: "Venmo" },
 
       { key: "btc", label: "Bitcoin (BTC)", isCrypto: true, coingeckoId: "bitcoin" },
       { key: "ltc", label: "Litecoin (LTC)", isCrypto: true, coingeckoId: "litecoin" },
@@ -48,7 +49,8 @@ module.exports = {
     ],
 
     manualDetails: {
-      chime:   { display: "$plushiepacks" }
+      chime: { display: "$plushiepacks" },
+      venmo: { display: "@plushiepacks", confirmCode: "0995" }
     },
 
     wallets: {
