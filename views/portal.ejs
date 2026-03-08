@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title><%= config.brand.siteName %> — Portal</title>
+  <link rel="stylesheet" href="/public/styles.css" />
+</head>
+<body class="portalPage">
+  <div class="portalNebula"></div>
+  <div class="portalStars" aria-hidden="true"></div>
+
+  <main class="portalShell" id="portalShell">
+
+    <% if (error) { %>
+      <div class="error" style="max-width:540px;"><%= error %></div>
+    <% } %>
+
+    <button class="portalCore" id="enterCore" type="button" aria-label="Enter Portal" onclick="window.portalEnter && window.portalEnter()">
+      <span class="portalRing ringA"></span>
+      <span class="portalRing ringB"></span>
+      <img class="portalMascot" src="/public/img/yellow-bear-logo.svg" alt="Plushie Packs yellow bear logo" />
+      <span class="portalPulse"></span>
+    </button>
+
+    <button class="portalEnter" id="enterButton" type="button" onclick="window.portalEnter && window.portalEnter()">Open Portal</button>
+
+    <div class="authDeck" id="authDeck" aria-hidden="false">
+      <section class="authCard">
+        <h2>Member Access</h2>
+        <p class="muted small">Already holding a key? Authenticate to proceed.</p>
+        <form method="POST" action="/auth/login">
+          <label>Handle</label>
+          <input name="handle" required placeholder="your-handle" autocomplete="username"/>
+          <label>Passcode</label>
+          <input name="pass" type="password" required placeholder="••••••••" autocomplete="current-password"/>
+          <button class="btn" type="submit">Access Vault</button>
+        </form>
+      </section>
+
+      <section class="authCard">
+        <h2>Request Access</h2>
+        <p class="muted small">Create your private identity and unlock the portal.</p>
+        <form method="POST" action="/auth/register">
+          <label>Handle</label>
+          <input name="handle" required minlength="3" placeholder="new-handle" autocomplete="username"/>
+          <label>Passcode</label>
+          <input name="pass" type="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password"/>
+          <button class="btn" type="submit">Create Access</button>
+        </form>
+      </section>
+    </div>
+
+    <% if (memberUser) { %>
+      <div class="portalMemberActions">
+        <a class="btn" href="/vault">Continue as @<%= memberUser.handle %></a>
+        <form method="POST" action="/auth/logout">
+          <button class="btn btn-small" type="submit">Logout</button>
+        </form>
+      </div>
+    <% } %>
+  </main>
+
+
+
+
+  <script>
+    document.body.classList.add('js-enabled');
+
+    const stars = document.querySelector('.portalStars');
+    if (stars) {
+      for (let i = 0; i < 80; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'star';
+        dot.style.left = `${Math.random() * 100}%`;
+        dot.style.top = `${Math.random() * 100}%`;
+        dot.style.animationDelay = `${Math.random() * 6}s`;
+        dot.style.opacity = (Math.random() * 0.8 + 0.15).toFixed(2);
+        stars.appendChild(dot);
+      }
+    }
+
+    const enterCore = document.getElementById('enterCore');
+    const enterButton = document.getElementById('enterButton');
+    const authDeck = document.getElementById('authDeck');
+    const shell = document.getElementById('portalShell');
+    if (authDeck) {
+      authDeck.classList.remove('open');
+      authDeck.setAttribute('aria-hidden', 'true');
+    }
+
+    function revealDeck() {
+      if (!authDeck || !shell) return;
+      authDeck.classList.add('open');
+      authDeck.setAttribute('aria-hidden', 'false');
+      shell.classList.add('entered');
+    }
+
+    function cinematicEnter() {
+      if (!shell) return;
+      shell.classList.add('transitioning');
+      if (authDeck?.classList.contains('open')) return;
+      window.setTimeout(revealDeck, 220);
+    }
+
+    window.portalEnter = cinematicEnter;
+    if (enterCore) enterCore.addEventListener('click', cinematicEnter);
+    if (enterButton) enterButton.addEventListener('click', cinematicEnter);
+
+  </script>
+</body>
+</html>
