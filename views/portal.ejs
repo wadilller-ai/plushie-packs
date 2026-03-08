@@ -1,0 +1,263 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title><%= config.brand.siteName %> — Portal</title>
+  <link rel="stylesheet" href="/public/styles.css" />
+</head>
+<body class="portalPage">
+  <div class="portalNebula"></div>
+  <div class="portalStars" aria-hidden="true"></div>
+
+  <main class="portalShell" id="portalShell">
+
+    <% if (error) { %>
+      <div class="error" style="max-width:540px;"><%= error %></div>
+    <% } %>
+
+    <button class="portalCore" id="enterCore" type="button" aria-label="Enter Portal">
+      <span class="portalRing ringA"></span>
+      <span class="portalRing ringB"></span>
+      <img class="portalMascot" src="/public/img/yellow-bear-logo.svg" alt="Plushie Packs yellow bear logo" />
+      <span class="portalPulse"></span>
+    </button>
+
+    <button class="portalEnter" id="enterButton" type="button">Open Portal</button>
+
+    <div class="authDeck" id="authDeck" aria-hidden="true">
+      <section class="authCard">
+        <h2>Member Access</h2>
+        <p class="muted small">Already holding a key? Authenticate to proceed.</p>
+        <form method="POST" action="/auth/login">
+          <label>Handle</label>
+          <input name="handle" required placeholder="your-handle" autocomplete="username"/>
+          <label>Passcode</label>
+          <input name="pass" type="password" required placeholder="••••••••" autocomplete="current-password"/>
+          <button class="btn" type="submit">Access Vault</button>
+        </form>
+      </section>
+
+      <section class="authCard">
+        <h2>Request Access</h2>
+        <p class="muted small">Create your private identity and unlock the portal.</p>
+        <form method="POST" action="/auth/register">
+          <label>Handle</label>
+          <input name="handle" required minlength="3" placeholder="new-handle" autocomplete="username"/>
+          <label>Passcode</label>
+          <input name="pass" type="password" required minlength="6" placeholder="At least 6 characters" autocomplete="new-password"/>
+          <button class="btn" type="submit">Create Access</button>
+        </form>
+      </section>
+    </div>
+
+    <% if (memberUser) { %>
+      <div class="portalMemberActions">
+        <a class="btn" href="/vault">Continue as @<%= memberUser.handle %></a>
+        <form method="POST" action="/auth/logout">
+          <button class="btn btn-small" type="submit">Logout</button>
+        </form>
+      </div>
+    <% } %>
+  </main>
+
+  <div class="portalBuddies" aria-hidden="true">
+    <img class="buddy buddy-1" src="/public/img/portal-buddy-strawberry.svg" alt="" />
+    <img class="buddy buddy-2" src="/public/img/portal-buddy-orange.svg" alt="" />
+    <img class="buddy buddy-3" src="/public/img/portal-buddy-grape.svg" alt="" />
+    <img class="buddy buddy-4" src="/public/img/portal-buddy-pineapple.svg" alt="" />
+    <img class="buddy buddy-5" src="/public/img/portal-buddy-cherry.svg" alt="" />
+    <img class="buddy buddy-6" src="/public/img/portal-buddy-blueberry.svg" alt="" />
+    <img class="buddy buddy-7" src="/public/img/portal-buddy-peach.svg" alt="" />
+  </div>
+
+
+  <script>
+    const stars = document.querySelector('.portalStars');
+    for (let i = 0; i < 80; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'star';
+      dot.style.left = `${Math.random() * 100}%`;
+      dot.style.top = `${Math.random() * 100}%`;
+      dot.style.animationDelay = `${Math.random() * 6}s`;
+      dot.style.opacity = (Math.random() * 0.8 + 0.15).toFixed(2);
+      stars.appendChild(dot);
+    }
+
+    const enterCore = document.getElementById('enterCore');
+    const enterButton = document.getElementById('enterButton');
+    const authDeck = document.getElementById('authDeck');
+    const shell = document.getElementById('portalShell');
+    const buddyNodes = Array.from(document.querySelectorAll('.buddy'));
+
+    function revealDeck() {
+      authDeck.classList.add('open');
+      authDeck.setAttribute('aria-hidden', 'false');
+      shell.classList.add('entered');
+    }
+
+    function cinematicEnter() {
+      shell.classList.add('transitioning');
+      setTimeout(revealDeck, 550);
+    }
+
+    enterCore.addEventListener('click', cinematicEnter);
+    enterButton.addEventListener('click', cinematicEnter);
+
+    if (buddyNodes.length) {
+      const state = {
+        buddies: [],
+        width: window.innerWidth,
+        height: window.innerHeight,
+        last: performance.now()
+      };
+
+      function speedVector() {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 95 + Math.random() * 70;
+        return { vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed };
+      }
+
+      function clampSpeed(buddy) {
+        const speed = Math.hypot(buddy.vx, buddy.vy) || 1;
+        const min = 75;
+        const max = 190;
+        if (speed < min || speed > max) {
+          const target = speed < min ? min : max;
+          const scale = target / speed;
+          buddy.vx *= scale;
+          buddy.vy *= scale;
+        }
+      }
+
+      function keepInside(buddy) {
+        const maxX = Math.max(0, state.width - buddy.size);
+        const maxY = Math.max(0, state.height - buddy.size);
+        buddy.x = Math.max(0, Math.min(maxX, buddy.x));
+        buddy.y = Math.max(0, Math.min(maxY, buddy.y));
+      }
+
+      function initBuddies() {
+        state.width = window.innerWidth;
+        state.height = window.innerHeight;
+
+        state.buddies = buddyNodes.map((node) => {
+          const size = Math.max(42, Math.round(node.getBoundingClientRect().width || parseFloat(getComputedStyle(node).width) || 92));
+          const velocity = speedVector();
+          return {
+            node,
+            size,
+            radius: size * 0.42,
+            x: Math.random() * Math.max(1, state.width - size),
+            y: Math.random() * Math.max(1, state.height - size),
+            vx: velocity.vx,
+            vy: velocity.vy
+          };
+        });
+
+        for (const buddy of state.buddies) {
+          keepInside(buddy);
+          buddy.node.style.transform = `translate3d(${buddy.x}px, ${buddy.y}px, 0)`;
+        }
+      }
+
+      function wallBounce(buddy) {
+        const maxX = Math.max(0, state.width - buddy.size);
+        const maxY = Math.max(0, state.height - buddy.size);
+
+        if (buddy.x <= 0) {
+          buddy.x = 0;
+          buddy.vx = Math.abs(buddy.vx);
+        } else if (buddy.x >= maxX) {
+          buddy.x = maxX;
+          buddy.vx = -Math.abs(buddy.vx);
+        }
+
+        if (buddy.y <= 0) {
+          buddy.y = 0;
+          buddy.vy = Math.abs(buddy.vy);
+        } else if (buddy.y >= maxY) {
+          buddy.y = maxY;
+          buddy.vy = -Math.abs(buddy.vy);
+        }
+      }
+
+      function collide(a, b) {
+        const ax = a.x + a.size * 0.5;
+        const ay = a.y + a.size * 0.5;
+        const bx = b.x + b.size * 0.5;
+        const by = b.y + b.size * 0.5;
+        const dx = bx - ax;
+        const dy = by - ay;
+        const dist = Math.hypot(dx, dy) || 0.0001;
+        const minDist = a.radius + b.radius;
+        if (dist >= minDist) return;
+
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const overlap = minDist - dist;
+
+        a.x -= nx * overlap * 0.5;
+        a.y -= ny * overlap * 0.5;
+        b.x += nx * overlap * 0.5;
+        b.y += ny * overlap * 0.5;
+
+        const relVel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+        if (relVel > 0) return;
+
+        const impulse = -1.05 * relVel;
+        a.vx -= impulse * nx;
+        a.vy -= impulse * ny;
+        b.vx += impulse * nx;
+        b.vy += impulse * ny;
+
+        clampSpeed(a);
+        clampSpeed(b);
+        wallBounce(a);
+        wallBounce(b);
+      }
+
+      function draw() {
+        for (const buddy of state.buddies) {
+          const rot = Math.max(-16, Math.min(16, (buddy.vx + buddy.vy) * 0.02));
+          buddy.node.style.transform = `translate3d(${buddy.x}px, ${buddy.y}px, 0) rotate(${rot}deg)`;
+        }
+      }
+
+      function frame(time) {
+        const dt = Math.min(0.045, (time - state.last) / 1000 || 0.016);
+        state.last = time;
+
+        for (const buddy of state.buddies) {
+          buddy.x += buddy.vx * dt;
+          buddy.y += buddy.vy * dt;
+          wallBounce(buddy);
+        }
+
+        for (let i = 0; i < state.buddies.length; i++) {
+          for (let j = i + 1; j < state.buddies.length; j++) {
+            collide(state.buddies[i], state.buddies[j]);
+          }
+        }
+
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      initBuddies();
+      draw();
+      requestAnimationFrame(frame);
+
+      window.addEventListener('resize', () => {
+        state.width = window.innerWidth;
+        state.height = window.innerHeight;
+        for (const buddy of state.buddies) {
+          buddy.size = Math.max(42, Math.round(buddy.node.getBoundingClientRect().width || buddy.size));
+          buddy.radius = buddy.size * 0.42;
+          keepInside(buddy);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
