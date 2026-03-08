@@ -40,14 +40,13 @@
 
   <hr class="hr" />
 
-  <form method="POST" action="/payment/<%= encodeURIComponent(order.order_code) %>/select" class="filters">
+  <form id="paymentMethodForm" method="POST" action="/payment/<%= encodeURIComponent(order.order_code) %>/select" class="filters">
     <label class="muted small">Payment Method</label>
-    <select name="payment_method">
+    <select id="paymentMethodSelect" name="payment_method">
       <% methods.forEach(m => { %>
         <option value="<%= m.key %>" <%= (m.key === selected.key) ? 'selected' : '' %>><%= m.label %></option>
       <% }) %>
     </select>
-    <button class="btn btn-small" type="submit">Update</button>
   </form>
 
   <div class="payBox">
@@ -72,14 +71,38 @@
     <% } else { %>
       <div class="payLine">Send: <b>$<%= Number(order.total_usd).toFixed(2) %></b></div>
       <div class="payLine">To: <span class="mono"><%= paymentDetails.display %></span></div>
+      <% if (paymentDetails.confirmCode) { %>
+        <div class="payLine">4 digit confirm code: <b><%= paymentDetails.confirmCode %></b></div>
+      <% } %>
       <div class="muted small">Memo/Note: <b><%= order.order_code %></b></div>
     <% } %>
   </div>
 
-  <form method="POST" action="/payment/<%= encodeURIComponent(order.order_code) %>/confirm" style="margin-top:14px;">
-    <button class="btn full" type="submit">I Sent Payment</button>
-    <div class="muted small">After you pay, your order is placed for review.</div>
-  </form>
+  <% if (selected.isCrypto) { %>
+    <form method="POST" action="/payment/<%= encodeURIComponent(order.order_code) %>/confirm" style="margin-top:14px;">
+      <button class="btn full" type="submit">I Sent Crypto Payment</button>
+      <div class="muted small">This will open a status page showing your payment as processing.</div>
+    </form>
+
+    <form method="POST" action="/payment/<%= encodeURIComponent(order.order_code) %>/not-sent" style="margin-top:10px;">
+      <button class="btn btn-small" type="submit">I Have Not Sent Payment</button>
+      <div class="muted small">Use this if you have not sent crypto yet.</div>
+    </form>
+  <% } else { %>
+    <form method="POST" action="/payment/<%= encodeURIComponent(order.order_code) %>/confirm" style="margin-top:14px;">
+      <button class="btn full" type="submit">I Sent Payment</button>
+      <div class="muted small">After you pay, your order is placed for review.</div>
+    </form>
+  <% } %>
 </section>
+
+
+<script>
+  const paymentMethodForm = document.getElementById("paymentMethodForm");
+  const paymentMethodSelect = document.getElementById("paymentMethodSelect");
+  if (paymentMethodForm && paymentMethodSelect) {
+    paymentMethodSelect.addEventListener("change", () => paymentMethodForm.submit());
+  }
+</script>
 
 <%- include('partials/footer') %>
